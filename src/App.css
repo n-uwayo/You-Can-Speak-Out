@@ -2,6 +2,6 @@ body,
 html,
 #root {
     margin: 0;
-    padding: 0;
+    padding: 20;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
