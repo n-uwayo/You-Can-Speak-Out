@@ -2,7 +2,10 @@
 
 YCSpout is a platform designed to help students improve their public speaking skills through structured tutorials, practical tasks, and personalized feedback.
 
-## Home page screenshoot
+## Home page screenshot
+
+![yspout](https://github.com/user-attachments/assets/ca4aeeae-9c81-45d2-be25-be95a208ac6f)
+
 
 ### Frontend
 - **React.js** — For building a dynamic and responsive user interface using component-based architecture.
