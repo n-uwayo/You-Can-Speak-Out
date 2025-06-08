@@ -50,6 +50,8 @@ YCSpout is a platform designed to help students improve their public speaking sk
 - The frontend will be deployed on  Netlify Platform
 - The backend will be deployed by using  Render.com 
 
+## Author
+  Noella UWAYO
 
 ## License
 
