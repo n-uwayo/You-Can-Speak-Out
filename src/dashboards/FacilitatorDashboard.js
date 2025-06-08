@@ -47,47 +47,50 @@ function FacilitatorDashboard() {
         div >
         <
         h1 > Facilitator Dashboard < /h1> <
-        p > Welcome, Facilitator.Here you can upload tutorials and manage sessions. < /p>
+        p > Welcome, Facilitator. < /p>
 
         <
         h3 > Upload Tutorial < /h3> <
         input value = { tutorialTitle }
         onChange = {
-            (e) => setTutorialTitle(e.target.value) }
+            (e) => setTutorialTitle(e.target.value)
+        }
         /> <
         button onClick = { uploadTutorial } > Upload < /button>
 
         <
         h3 > Create Assignment
         for Tutorial < /h3> {
-            assignments.map(a => ( <
-                div key = { a.id } >
-                <
-                p > Tutorial: { a.tutorialTitle } < /p> <
-                input type = "text"
-                placeholder = "Assignment Title"
-                onBlur = {
-                    (e) => createAssignment(a.tutorialId, e.target.value) }
-                /> <
-                /div>
-            ))
-        }
+        assignments.map(a => ( <
+            div key = { a.id } >
+            <
+            p > Tutorial: { a.tutorialTitle } < /p> <
+            input type = "text"
+            placeholder = "Assignment Title"
+            onBlur = {
+                (e) => createAssignment(a.tutorialId, e.target.value)
+            }
+            /> < /
+            div >
+        ))
+    }
 
+    <
+    h3 > Review Student Submissions < /h3> {
+    submissions.map(sub => ( <
+        div key = { sub.id } >
         <
-        h3 > Review Student Submissions < /h3> {
-            submissions.map(sub => ( <
-                div key = { sub.id } >
-                <
-                p > Student: { sub.studentName }, Assignment: { sub.assignmentTitle } < /p> <
-                textarea placeholder = "Write feedback"
-                onBlur = {
-                    (e) => giveFeedback(sub.id, e.target.value) }
-                /> <
-                /div>
-            ))
-        } <
-        /div>
-    );
+        p > Student: { sub.studentName }, Assignment: { sub.assignmentTitle } < /p> <
+        textarea placeholder = "Write feedback"
+        onBlur = {
+            (e) => giveFeedback(sub.id, e.target.value)
+        }
+        /> < /
+        div >
+    ))
+} <
+/div>
+);
 }
 
 export default FacilitatorDashboard;

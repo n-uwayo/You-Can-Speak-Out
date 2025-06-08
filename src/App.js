@@ -1,67 +1,20 @@
 import React, { useState } from "react";
 import "./App.css";
-
 import backgroundImage from "./assets/public_speaking_bg.png";
 
 // Dashboards
-const AdminDashboard = () => ( <
-    >
-    <
-    h1 > Admin Dashboard < /h1> <
-    p > Welcome, Admin.Here you can manage users and content. < /p> < / >
-);
-
-const FacilitatorDashboard = () => ( <
-    >
-    <
-    h1 > Facilitator Dashboard < /h1> <
-    p > Welcome, Facilitator.Here you can upload tutorials and manage sessions. < /p> < / >
-);
-
-const StudentDashboard = () => ( <
-    >
-    <
-    h1 > Student Dashboard < /h1> <
-    p > Welcome to your learning journey.Here are your tasks and progress. < /p> < / >
-);
+import AdminDashboard from "./dashboards/AdminDashboard";
+import FacilitatorDashboard from "./dashboards/FacilitatorDashboard";
+import StudentDashboard from "./dashboards/StudentDashboard";
 
 function App() {
     const [page, setPage] = useState("home");
-    const [userRole, setUserRole] = useState(null); // "admin" | "facilitator" | "student"
+    const [userRole, setUserRole] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const inputStyle = {
-        padding: "10px",
-        margin: "10px 0",
-        borderRadius: "8px",
-        border: "none",
-        width: "250px",
-        fontSize: "1rem",
-    };
+    const API_BASE_URL = "http://localhost:5000/api/auth";
 
-    const formStyle = {
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        padding: "30px",
-        borderRadius: "12px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        color: "white",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
-    };
-
-    const linkButtonStyle = {
-        color: "#00ffff",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        textDecoration: "underline",
-        marginTop: "10px",
-    };
-
-    const API_BASE_URL = "http://localhost:5000/api/auth"; // Update if backend URL differs
-
-    // --- Sign In Component ---
+    // --- SignIn Component ---
     const SignIn = () => {
         const [username, setUsername] = useState("");
         const [password, setPassword] = useState("");
@@ -82,18 +35,12 @@ function App() {
                 }
 
                 const data = await response.json();
-                console.log("SignIn success:", data);
-
                 localStorage.setItem("authToken", data.token);
 
-                // 👇 Redirect logic based on username
-                if (username === "@admin") {
-                    setUserRole("admin");
-                } else if (username.endsWith("@facilitator")) {
-                    setUserRole("facilitator");
-                } else {
-                    setUserRole("student");
-                }
+                // Role detection
+                if (username === "@admin") setUserRole("admin");
+                else if (username.endsWith("@facilitator")) setUserRole("facilitator");
+                else setUserRole("student");
 
                 setPage("home");
             } catch (error) {
@@ -103,17 +50,16 @@ function App() {
             }
         };
 
-
         return ( <
             >
             <
             h1 > Sign In < /h1> <
-            form style = { formStyle }
+            form className = "form"
             onSubmit = { handleSignIn } >
             <
             input type = "text"
             placeholder = "Username"
-            required style = { inputStyle }
+            required className = "input"
             value = { username }
             onChange = {
                 (e) => setUsername(e.target.value)
@@ -121,30 +67,22 @@ function App() {
             /> <
             input type = "password"
             placeholder = "Password"
-            required style = { inputStyle }
+            required className = "input"
             value = { password }
             onChange = {
                 (e) => setPassword(e.target.value)
             }
             /> <
             button type = "submit"
-            style = {
-                {
-                    ...inputStyle,
-                    backgroundColor: "#00ffff",
-                        color: "black",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                }
-            }
+            className = "submit-button"
             disabled = { loading } > { loading ? "Signing In..." : "Sign In" } <
             /button> <
             p >
-            Don 't have an account?{" "} <
+            Don’ t have an account ? { " " } <
             button onClick = {
                 () => setPage("signup")
             }
-            style = { linkButtonStyle }
+            className = "link-button"
             type = "button" >
             Sign Up <
             /button> < /
@@ -153,7 +91,7 @@ function App() {
         );
     };
 
-    // --- Sign Up Component ---
+    // --- SignUp Component ---
     const SignUp = () => {
         const [name, setName] = useState("");
         const [username, setUsername] = useState("");
@@ -162,14 +100,12 @@ function App() {
 
         const handleSignUp = async(e) => {
             e.preventDefault();
-
             if (password !== confirmPassword) {
                 alert("Passwords do not match.");
                 return;
             }
 
             setLoading(true);
-
             try {
                 const response = await fetch(`${API_BASE_URL}/signup`, {
                     method: "POST",
@@ -195,12 +131,12 @@ function App() {
             >
             <
             h1 > Sign Up < /h1> <
-            form style = { formStyle }
+            form className = "form"
             onSubmit = { handleSignUp } >
             <
             input type = "text"
             placeholder = "Full Name"
-            required style = { inputStyle }
+            required className = "input"
             value = { name }
             onChange = {
                 (e) => setName(e.target.value)
@@ -208,7 +144,7 @@ function App() {
             /> <
             input type = "text"
             placeholder = "Username"
-            required style = { inputStyle }
+            required className = "input"
             value = { username }
             onChange = {
                 (e) => setUsername(e.target.value)
@@ -216,7 +152,7 @@ function App() {
             /> <
             input type = "password"
             placeholder = "Password"
-            required style = { inputStyle }
+            required className = "input"
             value = { password }
             onChange = {
                 (e) => setPassword(e.target.value)
@@ -224,22 +160,14 @@ function App() {
             /> <
             input type = "password"
             placeholder = "Confirm Password"
-            required style = { inputStyle }
+            required className = "input"
             value = { confirmPassword }
             onChange = {
                 (e) => setConfirmPassword(e.target.value)
             }
             /> <
             button type = "submit"
-            style = {
-                {
-                    ...inputStyle,
-                    backgroundColor: "#00ffff",
-                        color: "black",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                }
-            }
+            className = "submit-button"
             disabled = { loading } > { loading ? "Signing Up..." : "Sign Up" } <
             /button> <
             p >
@@ -247,7 +175,7 @@ function App() {
             button onClick = {
                 () => setPage("signin")
             }
-            style = { linkButtonStyle }
+            className = "link-button"
             type = "button" >
             Sign In <
             /button> < /
@@ -256,177 +184,78 @@ function App() {
         );
     };
 
-    // --- Home & About ---
+    // --- Pages ---
     const Home = () => ( <
-        >
+        section className = "home-main" >
         <
         h1 > Welcome to YCSpout < /h1> <
-        p > Your path to mastering public speaking starts here. < /p> < / >
+        p > Your path to mastering public speaking. < /p> < /
+        section >
     );
 
     const About = () => ( <
         >
         <
         h1 > About YCSpout < /h1> <
-        p style = {
-            { maxWidth: "600px" }
-        } >
-        YCSpout empowers youth in rural and urban areas with the ability to speak confidently.We provide structured training, resources, and community support. <
+        p className = "about-text" >
+        YCSpout empowers youth in rural areas with the ability to speak confidently.We provide structured training, resources, and community support. <
         /p> < / >
     );
 
-    // --- Logout Function ---
     const handleLogout = () => {
         localStorage.removeItem("authToken");
         setUserRole(null);
         setPage("home");
     };
 
-    // Render dashboard or app based on user role
-    if (userRole === "admin")
-        return ( <
-            >
-            <
-            AdminDashboard / >
-            <
-            button onClick = { handleLogout }
-            style = {
-                {
-                    marginTop: 20,
-                    padding: "10px 20px",
-                    cursor: "pointer",
-                    borderRadius: 8,
-                }
-            } >
-            Logout <
-            /button> < / >
-        );
 
-    if (userRole === "facilitator")
-        return ( <
-            >
-            <
-            FacilitatorDashboard / >
-            <
-            button onClick = { handleLogout }
-            style = {
-                {
-                    marginTop: 20,
-                    padding: "10px 20px",
-                    cursor: "pointer",
-                    borderRadius: 8,
-                }
-            } >
-            Logout <
-            /button> < / >
-        );
+    if (userRole === "admin") return < > < AdminDashboard / > < button onClick = { handleLogout }
+    className = "logout-button" > Logout < /button></ > ;
+    if (userRole === "facilitator") return < > < FacilitatorDashboard / > < button onClick = { handleLogout }
+    className = "logout-button" > Logout < /button></ > ;
+    if (userRole === "student") return < > < StudentDashboard / > < button onClick = { handleLogout }
+    className = "logout-button" > Logout < /button></ > ;
 
-    if (userRole === "student")
-        return ( <
-            >
-            <
-            StudentDashboard / >
-            <
-            button onClick = { handleLogout }
-            style = {
-                {
-                    marginTop: 20,
-                    padding: "10px 20px",
-                    cursor: "pointer",
-                    borderRadius: 8,
-                }
-            } >
-            Logout <
-            /button> < / >
-        );
-
-    // Default public pages
+    // --- Public Pages ---
     return ( <
-        div className = "app"
+        div className = "app-container"
         style = {
-            {
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                height: "100vh",
-                color: "white",
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-            }
-        } > { /* Navigation */ } <
-        nav style = {
-            {
-                position: "absolute",
-                top: 0,
-                width: "100%",
-                padding: "1rem",
-                backgroundColor: "rgba(0,0,0,0.5)",
-                display: "flex",
-                justifyContent: "center",
-                gap: "2rem",
-                fontWeight: "bold",
-                fontSize: "1.2rem",
-            }
+            { backgroundImage: `url(${backgroundImage})` }
         } >
+        <
+        nav className = "navbar" >
         <
         button onClick = {
             () => setPage("home")
-        }
-        style = {
-            { background: "none", border: "none", color: "white", cursor: "pointer" }
-        } >
-        Home <
-        /button> <
+        } > Home < /button> <
         button onClick = {
             () => setPage("about")
-        }
-        style = {
-            { background: "none", border: "none", color: "white", cursor: "pointer" }
-        } >
-        About <
-        /button> <
+        } > About < /button> <
         button onClick = {
             () => setPage("signin")
-        }
-        style = {
-            { background: "none", border: "none", color: "white", cursor: "pointer" }
-        } >
-        Sign In <
-        /button> <
+        } > Sign In < /button> <
         button onClick = {
             () => setPage("signup")
-        }
-        style = {
-            { background: "none", border: "none", color: "white", cursor: "pointer" }
-        } >
-        Sign Up <
-        /button> < /
+        } > Sign Up < /button> < /
         nav >
 
+        { /* Sidebar */ } <
+        aside className = "know-sidebar" >
         <
-        main style = {
-            {
-                marginTop: "5rem",
-                padding: "2rem",
-                display: "flex",
-                justifyContent: "center",
-                flexGrow: 1,
-            }
-        } > { page === "home" && < Home / > } { page === "about" && < About / > } { page === "signin" && < SignIn / > } { page === "signup" && < SignUp / > } <
+        h3 > Did you know ? < /h3> <
+        p >
+        Great speakers weren’ t born that way.With training and practice, you can become confident and clear just like them!
+        <
+        /p> < /
+        aside >
+
+
+        <
+        main className = "main-content" > { page === "home" && < Home / > } { page === "about" && < About / > } { page === "signin" && < SignIn / > } { page === "signup" && < SignUp / > } <
         /main>
 
         <
-        footer style = {
-            {
-                padding: "1rem",
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                color: "white",
-                fontSize: "0.9rem",
-            }
-        } > ©2024 YCSpout.All rights reserved. <
-        /footer> < /
+        footer className = "footer" > ©2025 YCSpout.All rights reserved. < /footer> < /
         div >
     );
 }

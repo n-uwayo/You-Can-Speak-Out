@@ -12,7 +12,7 @@ function StudentDashboard() {
     }, []);
 
     const handleSubmit = (assignmentId, file) => {
-        // Handle assignment submission logic
+        // Handle assignment submission 
         const formData = new FormData();
         formData.append("file", file);
 
@@ -29,34 +29,34 @@ function StudentDashboard() {
             div >
             <
             h1 > Student Dashboard < /h1> <
-            p > Welcome to your learning journey.Here are your tasks and progress. < /p>
+            p > Welcome to your Public Speaking learning journey. < /p>
 
             <
-            h2 > Assigned Tutorials & Sessions < /h2> <
+            h2 > Assigned Tutorials < /h2> <
             ul > {
                 tutorials.map(t => < li key = { t.id } > { t.title } < /li>)}</ul >
 
                     <
                     h2 > Your Assignments < /h2> {
-                        assignments.map(a => ( <
-                            div key = { a.id } >
-                            <
-                            p > < strong > { a.title } < /strong></p >
-                            <
-                            input type = "file"
-                            onChange = { e => handleSubmit(a.id, e.target.files[0]) }
-                            /> <
-                            /div>
-                        ))
-                    }
+                    assignments.map(a => ( <
+                        div key = { a.id } >
+                        <
+                        p > < strong > { a.title } < /strong></p >
+                        <
+                        input type = "file"
+                        onChange = { e => handleSubmit(a.id, e.target.files[0]) }
+                        /> < /
+                        div >
+                    ))
+                }
 
-                    <
-                    h2 > Your Feedback < /h2> <
-                    ul > {
-                        feedbacks.map(f => < li key = { f.id } > { f.comment } < /li>)}</ul >
-                            <
-                            /div>
-                        );
-                    }
+                <
+                h2 > Your Feedback < /h2> <
+                ul > {
+                    feedbacks.map(f => < li key = { f.id } > { f.comment } < /li>)}</ul >
+                        <
+                        /div>
+                    );
+                }
 
-                    export default StudentDashboard;
+                export default StudentDashboard;
