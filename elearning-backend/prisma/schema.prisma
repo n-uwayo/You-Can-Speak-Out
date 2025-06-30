@@ -1,0 +1,262 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profiles
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  role      UserRole @default(STUDENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Student relationships
+  enrollments     Enrollment[]
+  taskSubmissions TaskSubmission[]
+  comments        Comment[]
+  videoProgresses VideoProgress[]
+
+  // Instructor relationships (if user is instructor)
+  coursesCreated Course[] @relation("CourseInstructor")
+
+  @@map("users")
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+// Course model
+model Course {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  thumbnail   String?
+  price       Float    @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Instructor relation
+  instructorId String @db.ObjectId
+  instructor   User   @relation("CourseInstructor", fields: [instructorId], references: [id])
+
+  // Course content
+  modules     Module[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+// Module model (chapters/sections within a course)
+model Module {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  order       Int
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Course relation
+  courseId String @db.ObjectId
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Module content
+  videos Video[]
+  tasks  Task[]
+
+  @@map("modules")
+}
+
+// Video model
+model Video {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  videoUrl    String
+  duration    String // Format: "15:30"
+  order       Int
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Module relation
+  moduleId String @db.ObjectId
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  // Video interactions
+  comments   Comment[]
+  progresses VideoProgress[]
+
+  @@map("videos")
+}
+
+// Task/Assignment model
+model Task {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  instructions String?
+  dueDate     DateTime
+  points      Int        @default(0)
+  taskType    TaskType   @default(TEXT)
+  status      TaskStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Module relation
+  moduleId String @db.ObjectId
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  // Task submissions
+  submissions TaskSubmission[]
+
+  @@map("tasks")
+}
+
+enum TaskType {
+  TEXT
+  FILE
+  BOTH
+}
+
+enum TaskStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+// Task submission model
+model TaskSubmission {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  textSubmission String?
+  fileUrls       String[] // Array of file URLs
+  comment        String?
+  status         SubmissionStatus @default(PENDING)
+  grade          Float?
+  feedback       String?
+  submittedAt    DateTime         @default(now())
+  gradedAt       DateTime?
+
+  // Relations
+  taskId String @db.ObjectId
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  studentId String @db.ObjectId
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("task_submissions")
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+// Comment model for video discussions
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoId String @db.ObjectId
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  // Reply system
+  parentId String?    @db.ObjectId
+  parent   Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[]  @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+// Enrollment model (student-course relationship)
+model Enrollment {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  enrolledAt   DateTime         @default(now())
+  completedAt  DateTime?
+  status       EnrollmentStatus @default(ACTIVE)
+  progress     Float            @default(0) // Percentage 0-100
+
+  // Relations
+  studentId String @db.ObjectId
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  courseId String @db.ObjectId
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("enrollments")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+  CANCELLED
+}
+
+// Video progress tracking
+model VideoProgress {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  watchedSeconds Float    @default(0)
+  isCompleted    Boolean  @default(false)
+  lastWatchedAt  DateTime @default(now())
+
+  // Relations
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoId String @db.ObjectId
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@map("video_progress")
+}
+
+// Notification model
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  userId String @db.ObjectId
+  // Note: We don't create a relation here to avoid circular dependency
+  // Instead, we'll handle this in the application layer
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  COURSE_UPDATE
+  TASK_DUE
+  TASK_GRADED
+  NEW_COMMENT
+  ENROLLMENT
+  GENERAL
+}
