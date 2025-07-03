@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AssignmentUpload from './AssignmentUpload'; 
 import AssignmentsContent from './AssignmentsContent'; 
+import TasksContent  from './AtaskContent'; 
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Play, 
@@ -65,10 +66,42 @@ const apiService = {
     };
   },
 
+  async saveProgress(courseId) {
+    try {
+      const currentUser = this.getCurrentUser(); // Get currentUser here
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      const response = await fetch(`${API_BASE_URL}/student/saveProgress.php`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          course_id: courseId,
+          user_id: currentUser.id,
+          timestamp: Date.now()
+        }),
+      });
+      
+      const result = await response.json();
+      console.log(result);
+      // Silent background call - no console.log or user feedback
+      return result;
+    } catch (error) {
+      // Silent error handling - doesn't disrupt user experience
+      return { success: false, error: error.message };
+    }
+  },
+
+
+  
   // Get all courses (student will see only enrolled ones based on backend logic)
   async getEnrolledCourses() {
     try {
-      const response = await fetch(`${API_BASE_URL}/courses.php`, {
+      const currentUser = this.getCurrentUser(); // Get currentUser here
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      const response = await fetch(`${API_BASE_URL}/courses.php?student_idx=${currentUser.id}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -93,7 +126,11 @@ const apiService = {
   // Get course details with modules and enrollment info
   async getCourseDetail(courseId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/student/course.php?course_id=${courseId}`, {
+      const currentUser = this.getCurrentUser(); // Get currentUser here
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      const response = await fetch(`${API_BASE_URL}/student/course.php?course_id=${courseId}&student_idx=${currentUser.id}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -461,7 +498,7 @@ useEffect(() => {
         const transformedCourses = courses.map(course => ({
           ...course,
           instructor_name: course.instructor?.name || 'Unknown Instructor',
-          progress: 50,
+          progress: course.progress,
           total_videos: course.modules?.length || 0,
           status: course.is_published ? 'ACTIVE' : 'INACTIVE',
           enrolled_at: course.created_at || new Date().toISOString()
@@ -619,7 +656,7 @@ useEffect(() => {
         const transformedCourse = {
           ...course,
           instructor_name: course.instructor?.name || 'Unknown Instructor',
-          progress: Math.floor(Math.random() * 100),
+          progress: course.progress,
           enrollment_status: course.is_published ? 'ACTIVE' : 'INACTIVE',
           modules: course.modules?.map(module => ({
             ...module,
@@ -901,6 +938,15 @@ useEffect(() => {
         </div>
 
         <nav className="space-y-2">
+         <button
+            onClick={() => window.location.href = '/'}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+              currentView === '/' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            {showSidebar && <span>Home</span>}
+          </button>
           <button
             onClick={() => navigate('overview')}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
@@ -922,13 +968,23 @@ useEffect(() => {
           </button>
 
           <button
+            onClick={() => navigate('tasks')}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+              currentView === 'tasks' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            {showSidebar && <span>Tasks</span>}
+          </button>
+
+          <button
             onClick={() => navigate('assignments')}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
               currentView === 'assignments' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
             }`}
           >
             <FileText className="w-5 h-5" />
-            {showSidebar && <span>Assignments</span>}
+            {showSidebar && <span>Assignments Submitted</span>}
           </button>
         </nav>
 
@@ -1025,7 +1081,7 @@ useEffect(() => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Completed Tutorials</p>
@@ -1033,7 +1089,7 @@ useEffect(() => {
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-        </div>
+        </div> */}
         
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
@@ -1045,7 +1101,7 @@ useEffect(() => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Avg Progress</p>
@@ -1053,7 +1109,7 @@ useEffect(() => {
             </div>
             <TrendingUp className="w-8 h-8 text-orange-600" />
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Continue Learning */}
@@ -1127,7 +1183,7 @@ useEffect(() => {
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
               >
                 <PlayCircle className="w-5 h-5" />
-                <span>Continue Learning</span>
+                <span>Start Learning</span>
               </button>
             </div>
           </div>
@@ -1138,9 +1194,33 @@ useEffect(() => {
 
   // Enhanced Course Content with Video Player, Comments and Tasks
   const CourseContent = () => {
+    const autoSaveInterval = useRef(null);
     if (loading) return <LoadingSpinner />;
     if (error) return <ErrorDisplay message={error} onRetry={() => loadCourseDetail(selectedCourse?.id)} />;
-    if (!courseDetail) return <div>Course not found</div>;
+    if (!courseDetail) return <div>Tutorial not found</div>;
+
+    // Auto-save every 5 seconds
+  useEffect(() => {
+    if (!courseDetail?.id) return;
+
+    const saveProgress = async () => {
+      await apiService.saveProgress(courseDetail.id);
+    };
+
+    // Call immediately when component mounts
+    saveProgress();
+
+    // Set up interval to call every 5 seconds
+    autoSaveInterval.current = setInterval(saveProgress, 5000);
+
+    // Cleanup interval when component unmounts
+    return () => {
+      if (autoSaveInterval.current) {
+        clearInterval(autoSaveInterval.current);
+        autoSaveInterval.current = null;
+      }
+    };
+  }, [courseDetail?.id]);
 
     return (
       <div className="space-y-6">
@@ -1434,6 +1514,14 @@ useEffect(() => {
   );
 
 
+    // Simple placeholder content for other views
+  const TaskContentlink = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <TasksContent userId={4} />
+    </div>
+  );
+
+
   // Render current view
   const renderContent = () => {
     if (loading && currentView !== 'course') return <LoadingSpinner />;
@@ -1447,6 +1535,8 @@ useEffect(() => {
         return <CourseContent />;
       case 'assignments':
         return <AssignmentsContentlink />;
+      case 'tasks':
+        return <TaskContentlink />;
       default:
         return <OverviewContent />;
     }

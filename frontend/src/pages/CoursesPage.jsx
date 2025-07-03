@@ -42,7 +42,8 @@ const CoursesPage = () => {
     thumbnail: '',
     video_url:'',
     instructor_id: '',
-    is_published: false
+    is_published: false,
+    level: ''
   });
 
   // PHP API base URL - update this to match your setup
@@ -170,7 +171,8 @@ const CoursesPage = () => {
         thumbnail: formData.thumbnail.trim() || null,        
         youtube_url: formData.video_url.trim() || null, // Fixed: youtube_url instead of video_url
         instructor_id: formData.instructor_id,
-        is_published: formData.is_published
+        is_published: formData.is_published,
+        level: formData.level
       };
 
       const url = editingCourse 
@@ -193,6 +195,7 @@ const CoursesPage = () => {
       }
 
       const result = await response.json();
+      console.log(result);
       
       if (result.success) {
         alert(editingCourse ? 'Course updated successfully!' : 'Course created successfully!');
@@ -218,7 +221,8 @@ const CoursesPage = () => {
       thumbnail: course.thumbnail || '',
       video_url: course.youtube_url || '',
       instructor_id: course.instructor_id || course.instructor?.id || '',
-      is_published: course.is_published || false
+      is_published: course.is_published || false,
+      level: course.level || '',
     });
     setShowModal(true);
   };
@@ -262,7 +266,8 @@ const CoursesPage = () => {
       thumbnail: '',
       video_url:'',
       instructor_id: '',
-      is_published: false
+      is_published: false,
+      level:''
     });
     setEditingCourse(null);
   };
@@ -655,6 +660,23 @@ const CoursesPage = () => {
             </h2>
             
             <div className="space-y-5">
+              {/* Course Title */}
+              <select
+                name="level"
+                value={formData.level || ''}
+                onChange={handleInputChange}
+                required
+                className="w-full border border-gray-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Select level</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Confidence">Confidence</option>
+                <option value="Leadership">Leadership</option>
+              </select>
+
+
               {/* Course Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

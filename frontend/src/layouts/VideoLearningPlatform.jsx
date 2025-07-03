@@ -570,14 +570,14 @@ const VideoLearningPlatform = () => {
       ...category,
       count: category.id === 'all' 
         ? courses.filter(course => course.is_published).length
-        : courses.filter(course => course.is_published && getCourseCategory(course.title) === category.id).length
+        : courses.filter(course => course.is_published && getCourseCategory(course.level) === category.id).length
     }));
   };
 
   // Extract category from course title/description (simple logic)
-  const getCourseCategory = (title) => {
-    const titleLower = title.toLowerCase();
-    if (titleLower.includes('foundation') || titleLower.includes('basic')) return 'beginner';
+  const getCourseCategory = (level) => {
+    const titleLower = level.toLowerCase();
+    if (titleLower.includes('beginner') || titleLower.includes('basic')) return 'beginner';
     if (titleLower.includes('advanced') || titleLower.includes('leadership')) return 'advanced';
     if (titleLower.includes('confidence') || titleLower.includes('anxiety')) return 'confidence';
     if (titleLower.includes('leadership') || titleLower.includes('inspire')) return 'leadership';
@@ -588,7 +588,7 @@ const VideoLearningPlatform = () => {
   const filteredCourses = courses.filter(course => {
     if (!course.is_published) return false;
     
-    const courseCategory = getCourseCategory(course.title);
+    const courseCategory = getCourseCategory(course.level);
     const matchesCategory = selectedCategory === 'all' || courseCategory === selectedCategory;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.instructor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
