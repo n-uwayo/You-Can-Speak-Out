@@ -1,0 +1,1 @@
+[2025-07-03 11:45:46] User: 4 | Course: 11 | Watched: 3.689/15 mins | Progress: 24.6% | Found course duration: 15 minutes | Found existing progress: 24.04% (3.606 mins), completed: NO | Incremented from 3.606 mins to 3.689 mins | Updated existing progress record - stored 24.596% of duration | Updated enrollment progress to 24.6%

@@ -13,6 +13,7 @@ if (!$db) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 $task_id = isset($_GET['id']) ? intval($_GET['id']) : null;
+$user = isset($_GET['userid']) ? intval($_GET['userid']) : 8;
 
 switch ($method) {
     case 'GET':
@@ -157,10 +158,6 @@ function handleCreateTask($db, $user) {
         
         $course = $courseStmt->fetch();
         
-        // Check if user is admin or the instructor of the course
-        // if ($user['role'] !== 'ADMIN' && $course['instructor_id'] != $user['id']) {
-        //     sendError("You can only create tasks for your own courses", 403);
-        // }
         
         // Prepare data
         $title = $input['title'];

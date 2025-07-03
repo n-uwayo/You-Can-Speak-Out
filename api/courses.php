@@ -14,7 +14,7 @@ if (!$db) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 $course_id = isset($_GET['id']) ? intval($_GET['id']) : null;
-
+$user = isset($_GET['user_id']) ? intval($_GET['user_id']) : 6;
 switch ($method) {
     case 'GET':
         handleGetCourses($db, $course_id);
@@ -42,12 +42,14 @@ function handleGetCourses($db, $course_id = null) {
                     u.name as instructor_name,
                     u.email as instructor_email,
                     u.avatar as instructor_avatar,
+                    vp.watched_seconds as progress,
                     COUNT(DISTINCT e.id) as enrollment_count,
                     COUNT(DISTINCT m.id) as module_count
                 FROM courses c
                 LEFT JOIN users u ON c.instructor_id = u.id
                 LEFT JOIN enrollments e ON c.id = e.course_id
                 LEFT JOIN modules m ON c.id = m.course_id
+                LEFT JOIN video_progress vp ON vp.video_id = c.id
                 WHERE c.id = :course_id
                 GROUP BY c.id
             ";
@@ -101,12 +103,14 @@ function handleGetCourses($db, $course_id = null) {
                     u.name as instructor_name,
                     u.email as instructor_email,
                     u.avatar as instructor_avatar,
+                    vp.watched_seconds as progress,
                     COUNT(DISTINCT e.id) as enrollment_count,
                     COUNT(DISTINCT m.id) as module_count
                 FROM courses c
                 LEFT JOIN users u ON c.instructor_id = u.id
                 LEFT JOIN enrollments e ON c.id = e.course_id
                 LEFT JOIN modules m ON c.id = m.course_id
+                LEFT JOIN video_progress vp ON vp.video_id = c.id
                 GROUP BY c.id
                 ORDER BY c.created_at DESC
             ";
@@ -174,14 +178,19 @@ function handleCreateCourse($db, $user) {
         $title = $input['title'];
         $description = $input['description'];
         $thumbnail = isset($input['thumbnail']) ? $input['thumbnail'] : null;        
-        $video_url = isset($input['video_url']) ? $input['video_url'] : null;
+        $video_url = isset($input['youtube_url']) ? $input['youtube_url'] : null;
         $price = isset($input['price']) ? floatval($input['price']) : 0.00;
         $is_published = isset($input['is_published']) ? ($input['is_published'] ? 1 : 0) : 0;
         $instructor_id = intval($input['instructor_id']);
+        $level = $input['level'];
         
         $query = "
             INSERT INTO courses (title, description, thumbnail, price, is_published, instructor_id, youtube_url) 
             VALUES (:title, :description, :thumbnail, :price, :is_published, :instructor_id, :video_url)
+        ";
+        $query2 = "
+            INSERT INTO courses (title, description, thumbnail, price, is_published, instructor_id, youtube_url, level) 
+            VALUES ('$title', '$description', '$thumbnail', '$price', '$is_published', '$instructor_id', '$video_url', '$level')
         ";
         
         $stmt = $db->prepare($query);
@@ -193,21 +202,39 @@ function handleCreateCourse($db, $user) {
         $stmt->bindParam(":instructor_id", $instructor_id);
         $stmt->bindParam(":video_url", $video_url);
         
-        if ($stmt->execute()) {
-            $course_id = $db->lastInsertId();
+        $host = 'localhost';
+        $db = 'learning_management';
+        $user = 'root';
+        $pass = '';
+
+        $conn = new mysqli($host, $user, $pass, $db);
+
+        if ($conn->connect_error) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'DB connection failed']);
+            exit();
+        }
+        if($query2x = mysqli_query($conn, $query2)){
+        // if ($stmt->execute()) {
+            // $course_id = $db->lastInsertId();
+            $course_id = $conn->insert_id;
+
             
             // Get the created course with instructor data
             $getQuery = "
                 SELECT c.*, u.name as instructor_name, u.email as instructor_email 
                 FROM courses c 
                 LEFT JOIN users u ON c.instructor_id = u.id 
-                WHERE c.id = :course_id
+                WHERE c.id = ?
             ";
-            $getStmt = $db->prepare($getQuery);
-            $getStmt->bindParam(":course_id", $course_id);
+
+            $getStmt = $conn->prepare($getQuery);
+            $getStmt->bind_param("i", $course_id); // "i" = integer
             $getStmt->execute();
-            
-            $course = $getStmt->fetch();
+
+            $result = $getStmt->get_result();
+            $course = $result->fetch_assoc();
+
             $course['instructor'] = [
                 'id' => $course['instructor_id'],
                 'name' => $course['instructor_name'],
@@ -215,6 +242,7 @@ function handleCreateCourse($db, $user) {
             ];
             $course['modules'] = [];
             $course['enrollments'] = [];
+
             
             unset($course['instructor_name'], $course['instructor_email']);
             
@@ -274,7 +302,7 @@ function handleUpdateCourse($db, $user, $course_id) {
         $title = $input['title'];
         $description = $input['description'];
         $thumbnail = isset($input['thumbnail']) ? $input['thumbnail'] : null;
-        $video_url = isset($input['video_url']) ? $input['video_url'] : null;
+        $video_url = isset($input['youtube_url']) ? $input['youtube_url'] : null;
         $price = isset($input['price']) ? floatval($input['price']) : 0.00;
         $is_published = isset($input['is_published']) ? ($input['is_published'] ? 1 : 0) : 0;
         $instructor_id = intval($input['instructor_id']);

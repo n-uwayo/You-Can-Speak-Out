@@ -71,7 +71,6 @@ function handleGetEnrolledCourses($db, $user_id) {
                 e.status as enrollment_status,
                 e.progress as enrollment_progress,
                 e.completed_at,
-                vp.watched_seconds as progress,
                 COUNT(DISTINCT v.id) as total_videos,
                 COUNT(DISTINCT CASE WHEN vp.is_completed = 1 THEN v.id END) as completed_videos,
                 SEC_TO_TIME(SUM(CASE WHEN v.duration REGEXP '^[0-9]+:[0-9]+$' 
@@ -103,7 +102,7 @@ function handleGetEnrolledCourses($db, $user_id) {
         foreach ($courses as $course) {
             $totalVideos = (int)$course['total_videos'];
             $completedVideos = (int)$course['completed_videos'];
-            $progress = $totalVideos > 0 ? round(($completedVideos / $totalVideos) * 100, 2) : 50;
+            $progress = $totalVideos > 0 ? round(($completedVideos / $totalVideos) * 100, 2) : 0;
             
             $formattedCourses[] = [
                 'id' => (int)$course['id'],
@@ -151,14 +150,12 @@ function handleGetCourses($db, $course_id = null) {
                     u.name as instructor_name,
                     u.email as instructor_email,
                     u.avatar as instructor_avatar,
-                    vp.watched_seconds as progress,
                     COUNT(DISTINCT e.id) as enrollment_count,
                     COUNT(DISTINCT m.id) as module_count
                 FROM courses c
                 LEFT JOIN users u ON c.instructor_id = u.id
                 LEFT JOIN enrollments e ON c.id = e.course_id
                 LEFT JOIN modules m ON c.id = m.course_id
-                LEFT JOIN video_progress vp ON vp.video_id = c.id
                 WHERE c.id = :course_id
                 GROUP BY c.id
             ";
@@ -212,14 +209,12 @@ function handleGetCourses($db, $course_id = null) {
                     u.name as instructor_name,
                     u.email as instructor_email,
                     u.avatar as instructor_avatar,
-                    vp.watched_seconds as progress,
                     COUNT(DISTINCT e.id) as enrollment_count,
                     COUNT(DISTINCT m.id) as module_count
                 FROM courses c
                 LEFT JOIN users u ON c.instructor_id = u.id
                 LEFT JOIN enrollments e ON c.id = e.course_id
                 LEFT JOIN modules m ON c.id = m.course_id
-                LEFT JOIN video_progress vp ON vp.video_id = c.id
                 GROUP BY c.id
                 ORDER BY c.created_at DESC
             ";
