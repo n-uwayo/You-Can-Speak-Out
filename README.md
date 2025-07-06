@@ -2,6 +2,9 @@
 
 YCSpout is a platform designed to help students improve their public speaking skills through structured tutorials, practical tasks, and personalized feedback.
 
+## Link to access the platform 
+![yspout] (https://ycspsout.umwalimu.com)
+
 ## Home page screenshot
 
 ![yspout](https://github.com/user-attachments/assets/ca4aeeae-9c81-45d2-be25-be95a208ac6f)
