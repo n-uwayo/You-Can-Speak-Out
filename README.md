@@ -7,7 +7,12 @@ YCSpout is a platform designed to help students improve their public speaking sk
 
 ## Home page screenshot
 
-![yspout](https://github.com/user-attachments/assets/ca4aeeae-9c81-45d2-be25-be95a208ac6f)
+![4a](https://github.com/user-attachments/assets/9a74bb39-2ac6-4dd8-82b7-39add3e7df3c)
+![3a](https://github.com/user-attachments/assets/e88d9800-3d44-438f-be56-0331f51819b0)
+![2aa](https://github.com/user-attachments/assets/3f478d36-1da7-453e-879b-ac270ae802b7)
+![1aa](https://github.com/user-attachments/assets/9e7dcb0c-f744-43df-ba39-f60daf27f13f)
+![5a](https://github.com/user-attachments/assets/f4effc9c-0005-4d67-b6f7-64791d7ab520)
+
 
 
 ### Frontend
