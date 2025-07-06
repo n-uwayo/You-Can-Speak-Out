@@ -1,4 +1,4 @@
-# YCSpout - Public Speaking Learning Platform (Frontend)
+# YCSpout - Public Speaking Learning Platform 
 
 YCSpout is a platform designed to help students improve their public speaking skills through structured tutorials, practical tasks, and personalized feedback.
 
