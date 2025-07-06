@@ -4,7 +4,7 @@ YCSpout is a platform designed to help students improve their public speaking sk
 
 ## Link to access the platform  
 
-You can access the platform by visiting [yspout](https://ycspsout.umwalimu.com) or copying this URL `https://ycspsout.umwalimu.com' to your browser.
+You can access the platform by visiting [YCSPout](https://ycspsout.umwalimu.com) or copying this URL `https://ycspsout.umwalimu.com' to your browser.
 
 ## Home page screenshot
 
@@ -13,6 +13,17 @@ You can access the platform by visiting [yspout](https://ycspsout.umwalimu.com) 
 ![3a](https://github.com/user-attachments/assets/e88d9800-3d44-438f-be56-0331f51819b0)
 ![4a](https://github.com/user-attachments/assets/9a74bb39-2ac6-4dd8-82b7-39add3e7df3c)
 ![5a](https://github.com/user-attachments/assets/f4effc9c-0005-4d67-b6f7-64791d7ab520)
+
+## Other pages
+
+### Admin dashboard
+![admin](https://github.com/user-attachments/assets/fe338388-f91f-46d8-a8a4-7d5c870d68a0)
+
+### Instructor
+![instructor](https://github.com/user-attachments/assets/0dc0bbb7-b6f8-4eed-8bec-3c592838931b)
+
+### Student
+![student](https://github.com/user-attachments/assets/23e280bb-094f-4c74-8ae3-69c6e6618899)
 
 ##  Technologies Used
 
@@ -32,7 +43,7 @@ You can access the platform by visiting [yspout](https://ycspsout.umwalimu.com) 
 ## Features
 
 - User registration and login
-- Video tutorial viewing based on level and taking the corresponding tasks
+- Video tutorial viewing based on level, and taking the corresponding tasks
 - Task creation and submission
 - Provide and receive feedback
 
