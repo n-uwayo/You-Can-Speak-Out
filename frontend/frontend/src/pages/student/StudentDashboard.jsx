@@ -172,12 +172,17 @@ const apiService = {
   // Update video progress
   async updateVideoProgress(videoId, watchedSeconds, isCompleted = false) {
     try {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
       const response = await fetch(`${API_BASE_URL}/student/progress.php`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
           action: 'update_video_progress',
           video_id: videoId,
+          user_id: currentUser?.id,
           watched_seconds: watchedSeconds,
           is_completed: isCompleted
         }),
@@ -1510,7 +1515,7 @@ const StudentDashboard = () => {
             </div>
 
             {/* Certificate Generation Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                 <Award className="w-5 h-5" />
                 <span>Certificate</span>
@@ -1521,7 +1526,7 @@ const StudentDashboard = () => {
                   showMessage('Certificate generated successfully!', 'success');
                 }}
               />
-            </div>
+            </div> */}
           
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -1535,7 +1540,7 @@ const StudentDashboard = () => {
                 </button>
 
                 {showUploadPopup && (
-                  <AssignmentUpload userId={4} courseId={courseDetail.id} onClose={() => setShowUploadPopup(false)} />
+                  <AssignmentUpload userId={currentUser?.id} courseId={courseDetail.id} onClose={() => setShowUploadPopup(false)} />
                 )}
               </div>
             </div>
@@ -1545,16 +1550,17 @@ const StudentDashboard = () => {
     );
   };
 
+
   // Simple placeholder content for other views
   const AssignmentsContentlink = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <AssignmentsContent userId={4} />
+      <AssignmentsContent userId={currentUser.id} />
     </div>
   );
 
   const TaskContentlink = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <TasksContent userId={4} />
+      <TasksContent userId={currentUser.id} />
     </div>
   );
 

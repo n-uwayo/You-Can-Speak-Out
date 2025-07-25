@@ -76,11 +76,14 @@ const Sidebar = ({ isOpen, activeTab, setActiveTab }) => {
         <div className="mt-8 px-3">
           <div className="flex items-center px-3 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors duration-200">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-              <span className="text-sm font-medium">A</span>
+              <span className="text-sm font-medium">
+                {currentUser?.name?.charAt(0).toUpperCase() || 'A'}
+              </span>
+
             </div>
             <div>
-              <p className="text-sm font-medium">Admin</p>
-              <p className="text-xs text-gray-400">Administrator</p>
+              <p className="text-sm font-medium">{currentUser?.role}</p>
+              <p className="text-xs text-gray-400">{currentUser?.name}</p>
             </div>
           </div>
         </div>

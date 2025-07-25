@@ -407,6 +407,15 @@ const SubmissionsPage = () => {
                           <User className="w-4 h-4 text-gray-400 mr-2" />
                           <div className="text-sm font-medium text-gray-900">{submission.student}</div>
                         </div>
+
+                        <a 
+                      href={`https://ycspout.umwalimu.com/api/student/uploads/${submission.file_urls}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View File
+                    </a>
                         <div className="text-sm text-gray-500 mt-1">{submission.task}</div>
                         {submission.fileName && (
                           <div className="text-xs text-gray-400 mt-1">

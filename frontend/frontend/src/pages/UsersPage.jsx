@@ -358,7 +358,7 @@ const UsersPage = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600 mt-2">Manage users with PHP and MySQL backend</p>
+        <p className="text-gray-600 mt-2">Manage users</p>
         
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">

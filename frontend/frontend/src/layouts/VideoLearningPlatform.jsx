@@ -44,13 +44,8 @@ const VideoLearningPlatform = () => {
   const [courseModules, setCourseModules] = useState([]);
   const [courseReviews, setCourseReviews] = useState([]);
 
-  // Navigation function for demo
-  // const navigate = (path) => {
-  //   console.log(`Would navigate to: ${path}`);
-  //   alert(`Demo: Would navigate to ${path}`);
-  // };
-
-    const navigate = useNavigate();
+  // React Router navigation
+  const navigate = useNavigate();
 
   // PHP API base URL
   const API_BASE_URL = 'https://ycspout.umwalimu.com/api';
@@ -82,14 +77,12 @@ const VideoLearningPlatform = () => {
         const data = await response.json();
         if (data.success) {
           setSelectedCourse(data.data);
-          // Fetch course modules
           fetchCourseModules(courseId);
           fetchCourseReviews(courseId);
         }
       }
     } catch (err) {
       console.error('Error fetching course details:', err);
-      // Use fallback data
       const fallbackCourse = getFallbackCourseDetail(courseId);
       setSelectedCourse(fallbackCourse);
       setCourseModules(fallbackCourse.modules || []);
@@ -175,7 +168,6 @@ const VideoLearningPlatform = () => {
       const token = localStorage.getItem('token');
       
       if (token) {
-        // Call logout API to invalidate token on server
         await fetch(`${API_BASE_URL}/auth.php?action=logout`, {
           method: 'POST',
           headers: {
@@ -186,17 +178,21 @@ const VideoLearningPlatform = () => {
       }
     } catch (error) {
       console.error('Logout API error:', error);
-      // Continue with logout even if API fails
     } finally {
       // Clear localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('userId');
       localStorage.removeItem('enrollments');
       
-      // Show success message
       showMessage('Logged out successfully', 'success');
       
-      // Would redirect to login page in real app
+      // Reset state
+      setEnrollments([]);
+      setEnrollmentLoading({});
+      
+      // In a real app, you'd redirect to login page
       console.log('Would redirect to login page');
     }
   };
@@ -220,7 +216,6 @@ const VideoLearningPlatform = () => {
     } catch (err) {
       console.error('Error fetching tutorial:', err);
       setError(err.message);
-      // Use sample data as fallback
       setCourses(getSampleCourses());
     } finally {
       setLoading(false);
@@ -228,10 +223,16 @@ const VideoLearningPlatform = () => {
   };
 
   const fetchEnrollments = async () => {
-    if (!isLoggedIn || !isStudent) return;
+    if (!isLoggedIn || !isStudent) {
+      console.log('Skipping enrollment fetch:', { isLoggedIn, isStudent });
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
+      
+      console.log('Fetching enrollments with token:', token ? `present (${token.substring(0, 10)}...)` : 'missing');
+      
       const response = await fetch(`${API_BASE_URL}/enrollments.php`, {
         method: 'GET',
         headers: {
@@ -240,19 +241,50 @@ const VideoLearningPlatform = () => {
         }
       });
 
+      console.log('Enrollment response status:', response.status);
+
       if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setEnrollments(data.data || []);
+        const responseText = await response.text();
+        console.log('Enrollment raw response:', responseText);
+        
+        try {
+          const data = JSON.parse(responseText);
+          console.log('Enrollment parsed data:', data);
+          
+          if (data.success) {
+            const enrollmentsData = data.data || [];
+            console.log('Setting enrollments:', enrollmentsData);
+            setEnrollments(enrollmentsData);
+            showMessage(`Loaded ${enrollmentsData.length} enrollments`, 'success');
+          } else {
+            console.error('Enrollment API error:', data.message);
+            setEnrollments([]);
+            showMessage(`Enrollment API error: ${data.message}`, 'error');
+          }
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          setEnrollments([]);
+          showMessage('Failed to parse enrollment data', 'error');
         }
+      } else if (response.status === 401) {
+        console.log('Authentication failed - clearing session');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        showMessage('Session expired. Please log in again.', 'error');
+        setEnrollments([]);
+      } else {
+        console.error('Failed to fetch enrollments:', response.status, response.statusText);
+        setEnrollments([]);
+        showMessage(`Failed to load enrollments (${response.status})`, 'error');
       }
     } catch (err) {
       console.error('Error fetching enrollments:', err);
+      setEnrollments([]);
+      showMessage('Network error loading enrollments', 'error');
     }
   };
 
   const handleEnrollment = async (courseId, isEnrolled) => {
-    // Debug logging
     console.log('Enrollment attempt:', { courseId, isEnrolled, isLoggedIn, isStudent, currentUser });
 
     if (!isLoggedIn) {
@@ -270,172 +302,158 @@ const VideoLearningPlatform = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
       
-      // Enhanced debugging
-      console.log('Auth Debug:', {
-        tokenExists: !!token,
-        tokenValue: token,
-        tokenType: typeof token,
-        userExists: !!user,
-        userData: user ? JSON.parse(user) : null
-      });
+      if (!token) {
+        showMessage('Authentication token missing. Please log in again.', 'error');
+        navigate('/login');
+        return;
+      }
       
       if (isEnrolled) {
         // Unenroll - find enrollment and delete it
-        const enrollment = enrollments.find(e => e.course_id === courseId);
+        const courseIdNum = parseInt(courseId);
+        const enrollment = enrollments.find(e => parseInt(e.course_id) === courseIdNum);
         if (!enrollment) {
-          throw new Error('Enrollment not found');
+          showMessage('Enrollment not found. Refreshing enrollment data...', 'info');
+          await fetchEnrollments();
+          return;
         }
 
+        console.log('Unenrolling from enrollment ID:', enrollment.id);
+
+        const response = await fetch(`${API_BASE_URL}/enrollments.php?id=${enrollment.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Unenroll response status:', response.status);
+
+        const responseText = await response.text();
+        console.log('Unenroll raw response:', responseText);
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          showMessage('Session expired. Please log in again.', 'error');
+          navigate('/login');
+          return;
+        }
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          // Fallback for non-JSON response
+          setEnrollments(prev => prev.filter(e => e.id !== enrollment.id));
+          showMessage('Successfully unenrolled from course', 'success');
+          return;
+        }
+
+        let data;
         try {
-          const response = await fetch(`${API_BASE_URL}/enrollments.php?id=${enrollment.id}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          console.log('Unenroll response status:', response.status);
-          console.log('Unenroll response headers:', Object.fromEntries(response.headers.entries()));
-          
-          // Check if response is JSON
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            const textResponse = await response.text();
-            console.error('Non-JSON response:', textResponse);
-            throw new Error('API_NOT_READY');
-          }
-
-          const data = await response.json();
-          console.log('Unenroll response data:', data);
-          
-          if (response.status === 401) {
-            console.error('Authentication failed - clearing localStorage and redirecting to login');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            showMessage('Session expired. Please log in again.', 'error');
-            navigate('/login');
-            return;
-          }
-          
-          if (data.success) {
-            setEnrollments(prev => prev.filter(e => e.id !== enrollment.id));
-            showMessage('Successfully unenrolled from course', 'success');
-          } else {
-            throw new Error(data.message || 'Failed to unenroll');
-          }
-        } catch (apiError) {
-          if (apiError.message === 'API_NOT_READY' || apiError.name === 'SyntaxError') {
-            // Fallback: Remove enrollment locally
-            setEnrollments(prev => prev.filter(e => e.id !== enrollment.id));
-            showMessage('Successfully unenrolled from course (demo mode)', 'success');
-          } else {
-            throw apiError;
-          }
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          // Fallback for JSON parse errors
+          setEnrollments(prev => prev.filter(e => e.id !== enrollment.id));
+          showMessage('Successfully unenrolled from course', 'success');
+          return;
+        }
+        
+        if (data.success) {
+          setEnrollments(prev => prev.filter(e => e.id !== enrollment.id));
+          showMessage('Successfully unenrolled from course', 'success');
+        } else {
+          throw new Error(data.message || 'Failed to unenroll');
         }
       } else {
         // Enroll
-        console.log('Attempting to enroll in course:', courseId);
-        console.log('Using API URL:', `${API_BASE_URL}/enrollments.php`);
-        console.log('Request headers:', {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        });
-        console.log('Request body:', JSON.stringify({ course_id: courseId }));
+        const courseIdNum = parseInt(courseId);
+        console.log('Enrolling in course:', courseIdNum);
         
+        const response = await fetch(`${API_BASE_URL}/enrollments.php`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ course_id: courseIdNum })
+        });
+
+        console.log('Enroll response status:', response.status);
+
+        const responseText = await response.text();
+        console.log('Enroll raw response:', responseText);
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          showMessage('Session expired. Please log in again.', 'error');
+          navigate('/login');
+          return;
+        }
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          // Fallback for non-JSON response
+          const newEnrollment = {
+            id: Date.now(),
+            course_id: courseId,
+            student_id: currentUser.id,
+            progress: 0,
+            enrolled_at: new Date().toISOString(),
+            status: 'ACTIVE'
+          };
+          
+          setEnrollments(prev => [...prev, newEnrollment]);
+          showMessage('Successfully enrolled in course! (Fallback mode)', 'success');
+          return;
+        }
+
+        let data;
         try {
-          const response = await fetch(`${API_BASE_URL}/enrollments.php`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ course_id: courseId })
-          });
-
-          console.log('Enroll response status:', response.status);
-          console.log('Enroll response headers:', Object.fromEntries(response.headers.entries()));
-
-          // Get response text first
-          const responseText = await response.text();
-          console.log('Raw response:', responseText);
-
-          // Check if response is JSON
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            console.error('Non-JSON response:', responseText);
-            throw new Error('API_NOT_READY');
-          }
-
-          let data;
-          try {
-            data = JSON.parse(responseText);
-          } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            console.error('Response text:', responseText);
-            throw new Error('API_NOT_READY');
-          }
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          // Fallback for JSON parse errors
+          const newEnrollment = {
+            id: Date.now(),
+            course_id: courseId,
+            student_id: currentUser.id,
+            progress: 0,
+            enrolled_at: new Date().toISOString(),
+            status: 'ACTIVE'
+          };
           
-          console.log('Enroll response data:', data);
-          
-          if (response.status === 401) {
-            console.error('Authentication failed - token might be invalid or expired');
-            console.error('Current token:', token);
-            console.error('Current user:', currentUser);
-            
-            // Clear invalid session
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            showMessage('Session expired. Please log in again.', 'error');
-            navigate('/login');
+          setEnrollments(prev => [...prev, newEnrollment]);
+          showMessage('Successfully enrolled in course! (Fallback mode)', 'success');
+          return;
+        }
+        
+        if (data.success) {
+          const newEnrollment = data.data;
+          setEnrollments(prev => [...prev, newEnrollment]);
+          showMessage('Successfully enrolled in course!', 'success');
+        } else {
+          if (data.message === 'Already enrolled in this course') {
+            showMessage('You are already enrolled in this course', 'info');
+            await fetchEnrollments();
             return;
-          }
-          
-          if (data.success) {
-            const newEnrollment = data.data || {
-              id: Date.now(),
-              course_id: courseId,
-              student_id: currentUser.id,
-              progress: 0,
-              enrolled_at: new Date().toISOString()
-            };
-            
-            setEnrollments(prev => [...prev, newEnrollment]);
-            showMessage('Successfully enrolled in course!', 'success');
           } else {
-            throw new Error(data.message || 'Failed to enroll - please check server logs');
-          }
-        } catch (apiError) {
-          if (apiError.message === 'API_NOT_READY' || apiError.name === 'SyntaxError' || apiError.message.includes('fetch')) {
-            // Fallback: Add enrollment locally for demo purposes
-            const newEnrollment = {
-              id: Date.now(),
-              course_id: courseId,
-              student_id: currentUser.id,
-              progress: 0,
-              enrolled_at: new Date().toISOString(),
-              status: 'ACTIVE'
-            };
-            
-            setEnrollments(prev => [...prev, newEnrollment]);
-            showMessage('Successfully enrolled in course! (Demo mode - API authentication issue)', 'success');
-            console.log('Using fallback enrollment due to API error:', apiError.message);
-          } else {
-            throw apiError;
+            throw new Error(data.message || 'Failed to enroll');
           }
         }
       }
     } catch (err) {
       console.error('Enrollment error details:', err);
       
-      // More specific error messages
       if (err.message.includes('Session expired') || err.message.includes('Invalid or expired token')) {
-        // Don't show additional error - already handled above
+        return;
+      } else if (err.message === 'Already enrolled in this course') {
         return;
       } else if (err.name === 'SyntaxError' && err.message.includes('JSON')) {
-        showMessage('Server configuration error. Using demo mode for now.', 'error');
+        showMessage('Server response error. Please try again.', 'error');
       } else if (err.message.includes('fetch')) {
         showMessage('Network error. Please check your connection and try again.', 'error');
       } else {
@@ -452,15 +470,31 @@ const VideoLearningPlatform = () => {
   };
 
   const isEnrolledInCourse = (courseId) => {
-    return enrollments.some(enrollment => enrollment.course_id === courseId);
+    if (!isLoggedIn || !isStudent || !enrollments.length) {
+      return false;
+    }
+    
+    const courseIdNum = parseInt(courseId);
+    const enrolled = enrollments.some(enrollment => parseInt(enrollment.course_id) === courseIdNum);
+    
+    console.log(`Checking enrollment for course ${courseId}:`, {
+      courseIdNum,
+      enrolled,
+      enrollments: enrollments.map(e => ({ id: e.id, course_id: parseInt(e.course_id) }))
+    });
+    
+    return enrolled;
   };
 
   const getEnrollmentProgress = (courseId) => {
-    const enrollment = enrollments.find(e => e.course_id === courseId);
+    if (!isLoggedIn || !isStudent) return 0;
+    
+    const courseIdNum = parseInt(courseId);
+    const enrollment = enrollments.find(e => parseInt(e.course_id) === courseIdNum);
     return enrollment ? enrollment.progress : 0;
   };
 
-  // Sample courses as fallback - Updated for public speaking
+  // Sample courses as fallback
   const getSampleCourses = () => [
     {
       id: 1,
@@ -470,8 +504,8 @@ const VideoLearningPlatform = () => {
       instructor: { name: 'Jean Baptiste Uwimana', email: 'jean@ycspout.rw' },
       is_published: true,
       created_at: '2025-01-15T10:00:00Z',
-      modules: [{}, {}], // Sample modules for count
-      enrollments: Array(1420).fill({}), // Sample enrollments for count
+      modules: [{}, {}],
+      enrollments: Array(1420).fill({}),
       category: 'beginner',
       level: 'Beginner',
       duration: '8 hours',
@@ -486,8 +520,8 @@ const VideoLearningPlatform = () => {
       instructor: { name: 'Marie Claire Mukamana', email: 'marie@ycspout.rw' },
       is_published: true,
       created_at: '2025-01-10T10:00:00Z',
-      modules: [{}], // Sample modules for count
-      enrollments: Array(850).fill({}), // Sample enrollments for count
+      modules: [{}],
+      enrollments: Array(850).fill({}),
       category: 'intermediate',
       level: 'Intermediate',
       duration: '12 hours',
@@ -502,8 +536,8 @@ const VideoLearningPlatform = () => {
       instructor: { name: 'Emmanuel Nshimiyimana', email: 'emmanuel@ycspout.rw' },
       is_published: true,
       created_at: '2025-01-05T10:00:00Z',
-      modules: [{}, {}, {}], // Sample modules for count
-      enrollments: Array(567).fill({}), // Sample enrollments for count
+      modules: [{}, {}, {}],
+      enrollments: Array(567).fill({}),
       category: 'advanced',
       level: 'Advanced',
       duration: '15 hours',
@@ -512,7 +546,6 @@ const VideoLearningPlatform = () => {
     }
   ];
 
-  // Fallback course detail data
   const getFallbackCourseDetail = (courseId) => {
     const sampleCourse = getSampleCourses().find(c => c.id === courseId) || getSampleCourses()[0];
     return {
@@ -555,7 +588,6 @@ const VideoLearningPlatform = () => {
     };
   };
 
-  // Categories with dynamic counts - Updated for public speaking
   const getCategoriesWithCounts = () => {
     const baseCategoriesData = [
       { id: 'all', name: 'All Levels', icon: BookOpen, color: 'bg-gradient-to-r from-blue-500 to-indigo-500' },
@@ -574,17 +606,16 @@ const VideoLearningPlatform = () => {
     }));
   };
 
-  // Extract category from course title/description (simple logic)
   const getCourseCategory = (level) => {
     const titleLower = level.toLowerCase();
     if (titleLower.includes('beginner') || titleLower.includes('basic')) return 'beginner';
     if (titleLower.includes('advanced') || titleLower.includes('leadership')) return 'advanced';
     if (titleLower.includes('confidence') || titleLower.includes('anxiety')) return 'confidence';
     if (titleLower.includes('leadership') || titleLower.includes('inspire')) return 'leadership';
-    return 'intermediate'; // default category
+    return 'intermediate';
   };
 
-  // Filter courses based on category and search
+  // Filter courses
   const filteredCourses = courses.filter(course => {
     if (!course.is_published) return false;
     
@@ -593,6 +624,7 @@ const VideoLearningPlatform = () => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.instructor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
     return matchesCategory && matchesSearch;
   });
 
@@ -603,7 +635,6 @@ const VideoLearningPlatform = () => {
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 w-10 h-10 rounded-lg flex items-center justify-center">
               <Mic className="w-6 h-6 text-white" />
@@ -616,7 +647,6 @@ const VideoLearningPlatform = () => {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#courses" className="text-gray-700 hover:text-blue-600 font-medium">Tutorial</a>
             <a href="#categories" className="text-gray-700 hover:text-blue-600 font-medium">Speaking Levels</a>
@@ -624,11 +654,22 @@ const VideoLearningPlatform = () => {
             <a href="#about" className="text-gray-700 hover:text-blue-600 font-medium">About</a>
           </nav>
 
-          {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Muraho, {currentUser.name}</span>
+                <div className="text-sm text-gray-700">
+                  <div>Muraho, {currentUser.name}</div>
+                  <div className="text-xs text-gray-500">
+                    Enrollments: {enrollments.length} | Role: {currentUser.role}
+                    <button 
+                      onClick={fetchEnrollments}
+                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                      title="Refresh enrollments"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                </div>
                 <button 
                   onClick={() => {
                     const role = currentUser.role?.toLowerCase();
@@ -665,7 +706,6 @@ const VideoLearningPlatform = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button 
             className="md:hidden"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -678,7 +718,7 @@ const VideoLearningPlatform = () => {
         {showMobileMenu && (
           <div className="md:hidden py-4 border-t border-gray-200">
             <nav className="flex flex-col space-y-3">
-              <a href="#courses" className="text-gray-700 hover:text-blue-600 font-medium">Courses</a>
+              <a href="#courses" className="text-gray-700 hover:text-blue-600 font-medium">Tutorial</a>
               <a href="#categories" className="text-gray-700 hover:text-blue-600 font-medium">Speaking Levels</a>
               <a href="#features" className="text-gray-700 hover:text-blue-600 font-medium">Features</a>
               <a href="#about" className="text-gray-700 hover:text-blue-600 font-medium">About</a>
@@ -777,7 +817,6 @@ const VideoLearningPlatform = () => {
               and personalized feedback from expert facilitators. Designed specifically for rural students in Rwanda.
             </p>
             
-            {/* User-specific message */}
             {isLoggedIn && isStudent && (
               <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
                 <p className="text-blue-800">
@@ -787,14 +826,13 @@ const VideoLearningPlatform = () => {
                       onClick={() => navigate('/student/home')}
                       className="ml-2 text-blue-600 underline hover:text-blue-800"
                     >
-                      Continue your speaking journey →
+                      Continue your learning journey →
                     </button>
                   )}
                 </p>
               </div>
             )}
             
-            {/* Search Bar */}
             <div className="max-w-2xl mx-auto mb-8">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -808,7 +846,6 @@ const VideoLearningPlatform = () => {
               </div>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{courses.length}+</div>
@@ -892,9 +929,10 @@ const VideoLearningPlatform = () => {
     const handleEnrollClick = (e) => {
       e.stopPropagation();
       if (isEnrolled) {
-        // Redirect to course content or dashboard
         if (currentUser?.role === 'STUDENT') {
           navigate('/student/home');
+        } else if (currentUser?.role === 'ADMIN') {
+          navigate('/admin');
         }
       } else {
         handleEnrollment(course.id, false);
@@ -926,7 +964,6 @@ const VideoLearningPlatform = () => {
             )}
           </div>
           
-          {/* Enrollment Status Badge */}
           {isEnrolled && (
             <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
               <Check className="w-3 h-3 mr-1" />
@@ -961,7 +998,6 @@ const VideoLearningPlatform = () => {
             {course.description}
           </p>
 
-          {/* Progress Bar for Enrolled Courses */}
           {isEnrolled && (
             <div className="mb-4">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -1044,10 +1080,8 @@ const VideoLearningPlatform = () => {
     const handleEnrollClick = () => {
       if (isEnrolled) {
         if (currentUser?.role === 'STUDENT') {
-          console.log("hello there");
           navigate('/student/home');
-        }else if (currentUser?.role === 'ADMIN') {
-          console.log("hello there");
+        } else if (currentUser?.role === 'ADMIN') {
           navigate('/admin');
         }
       } else {
@@ -1193,8 +1227,6 @@ const VideoLearningPlatform = () => {
                 </ul>
               </div>
             )}
-
-          
           </div>
 
           {/* Sidebar */}
@@ -1279,8 +1311,6 @@ const VideoLearningPlatform = () => {
                   </div>
                 </div>
               </div>
-
-              
             </div>
           </div>
         </div>
@@ -1300,6 +1330,7 @@ const VideoLearningPlatform = () => {
             </h2>
             <p className="text-gray-600">
               {filteredCourses.length} speaking tutorials available
+              {isLoggedIn && ` | ${enrollments.length} enrolled`}
             </p>
           </div>
         </div>

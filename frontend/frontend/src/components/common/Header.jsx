@@ -59,7 +59,11 @@ const Header = ({ toggleSidebar }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-xl font-semibold text-gray-800">Admin Dashboard</h1>
+          {/* <h1 className="text-xl font-semibold text-gray-800">Admin Dashboard</h1> */}
+          <h1 className="text-xl font-semibold text-gray-800">
+            {currentUser?.role === 'ADMIN' ? 'Admin Dashboard' : 'Instructor Dashboard'}
+          </h1>
+
         </div>
 
         {/* Search bar */}

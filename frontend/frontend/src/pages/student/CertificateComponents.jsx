@@ -14,12 +14,56 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-// Certificate API Service
-const certificateService = {
-  async getCertificates() {
+// Utility function to get current user ID
+const getCurrentUserId = () => {
+  // Method 1: Get from localStorage if stored during login
+  const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
+  if (userId) {
+    return userId;
+  }
+
+  // Method 2: Extract from token if it contains user info
+  const token = localStorage.getItem('token');
+  if (token) {
     try {
+      // If token is JWT, decode it to get user ID
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.user_id || payload.id || payload.sub) {
+        return payload.user_id || payload.id || payload.sub;
+      }
+    } catch (error) {
+      console.log('Could not decode token for user ID');
+    }
+  }
+
+  // Method 3: Get from user data if stored
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      return user.id || user.user_id;
+    } catch (error) {
+      console.log('Could not parse user data');
+    }
+  }
+
+  // Fallback: return null if no user ID found
+  return null;
+};
+
+// Certificate API Service with dynamic user ID
+const certificateService = {
+  getCurrentUserId,
+
+  async getCertificates(userId = null) {
+    try {
+      const currentUserId = userId || getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('User ID not found. Please log in again.');
+      }
+
       const token = localStorage.getItem('token');
-      const response = await fetch('https://ycspout.umwalimu.com/api/student/certificates.php?action=list&user_id=4', {
+      const response = await fetch(`https://ycspout.umwalimu.com/api/student/certificates.php?action=list&user_id=${currentUserId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -35,10 +79,15 @@ const certificateService = {
     }
   },
 
-  async generateCertificate(courseId) {
+  async generateCertificate(courseId, userId = null) {
     try {
+      const currentUserId = userId || getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('User ID not found. Please log in again.');
+      }
+
       const token = localStorage.getItem('token');
-      const response = await fetch('https://ycspout.umwalimu.com/api/student/certificates.php?action=generate&user_id=4', {
+      const response = await fetch(`https://ycspout.umwalimu.com/api/student/certificates.php?action=generate&user_id=${currentUserId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -55,10 +104,15 @@ const certificateService = {
     }
   },
 
-  async checkCompletion(courseId) {
+  async checkCompletion(courseId, userId = null) {
     try {
+      const currentUserId = userId || getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('User ID not found. Please log in again.');
+      }
+
       const token = localStorage.getItem('token');
-      const response = await fetch('https://ycspout.umwalimu.com/api/student/certificates.php?action=check_completion&user_id=4', {
+      const response = await fetch(`https://ycspout.umwalimu.com/api/student/certificates.php?action=check_completion&user_id=${currentUserId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -75,9 +129,15 @@ const certificateService = {
     }
   },
 
-  downloadCertificate(certificateId) {
+  downloadCertificate(certificateId, userId = null) {
+    const currentUserId = userId || getCurrentUserId();
+    if (!currentUserId) {
+      alert('User ID not found. Please log in again.');
+      return;
+    }
+
     const token = localStorage.getItem('token');
-    window.open(`https://ycspout.umwalimu.com/api/student/certificates.php?action=download&certificate_id=${certificateId}&user_id=4`, '_blank');
+    window.open(`https://ycspout.umwalimu.com/api/student/certificates.php?action=download&certificate_id=${certificateId}&user_id=${currentUserId}`, '_blank');
   },
 
   verifyCertificate(certificateNumber) {
@@ -86,7 +146,7 @@ const certificateService = {
 };
 
 // Certificate Card Component
-const CertificateCard = ({ certificate, onDownload, onShare }) => {
+const CertificateCard = ({ certificate, onDownload, onShare, userId }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
@@ -131,20 +191,20 @@ const CertificateCard = ({ certificate, onDownload, onShare }) => {
         
         <div className="flex space-x-3">
           <button
-            onClick={() => onDownload(certificate.id)}
+            onClick={() => onDownload(certificate.id, userId)}
             className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
           >
             <Download className="w-4 h-4" />
             <span>Download</span>
           </button>
           
-          {/* <button
+          <button
             onClick={() => certificateService.verifyCertificate(certificate.certificate_number)}
             className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
           >
             <ExternalLink className="w-4 h-4" />
             <span>Verify</span>
-          </button> */}
+          </button>
           
           <button
             onClick={() => onShare(certificate)}
@@ -159,28 +219,33 @@ const CertificateCard = ({ certificate, onDownload, onShare }) => {
 };
 
 // Certificate Generation Button Component
-const CertificateGenerationButton = ({ course, onGenerate }) => {
+const CertificateGenerationButton = ({ course, onGenerate, userId }) => {
   const [checking, setChecking] = useState(false);
   const [completion, setCompletion] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [existingCertificate, setExistingCertificate] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (course?.id) {
       checkCourseCompletion();
       checkExistingCertificate();
     }
-  }, [course?.id]);
+  }, [course?.id, userId]);
 
   const checkCourseCompletion = async () => {
     setChecking(true);
+    setError(null);
     try {
-      const result = await certificateService.checkCompletion(course.id);
+      const result = await certificateService.checkCompletion(course.id, userId);
       if (result.success) {
         setCompletion(result.data);
+      } else {
+        setError(result.message);
       }
     } catch (error) {
       console.error('Error checking completion:', error);
+      setError(error.message);
     } finally {
       setChecking(false);
     }
@@ -188,7 +253,7 @@ const CertificateGenerationButton = ({ course, onGenerate }) => {
 
   const checkExistingCertificate = async () => {
     try {
-      const result = await certificateService.getCertificates();
+      const result = await certificateService.getCertificates(userId);
       if (result.success) {
         const certificates = result.data || [];
         const existing = certificates.find(cert => cert.course_id == course.id);
@@ -203,18 +268,21 @@ const CertificateGenerationButton = ({ course, onGenerate }) => {
     if (!completion?.completed) return;
     
     setGenerating(true);
+    setError(null);
     try {
-      const result = await certificateService.generateCertificate(course.id);
+      const result = await certificateService.generateCertificate(course.id, userId);
       if (result.success) {
         setExistingCertificate(result.data);
         if (onGenerate) {
           onGenerate(result.data);
         }
       } else {
+        setError(result.message);
         alert(result.message);
       }
     } catch (error) {
-      alert('Failed to generate certificate');
+      setError(error.message);
+      alert('Failed to generate certificate: ' + error.message);
     } finally {
       setGenerating(false);
     }
@@ -222,9 +290,31 @@ const CertificateGenerationButton = ({ course, onGenerate }) => {
 
   const handleDownload = () => {
     if (existingCertificate) {
-      certificateService.downloadCertificate(existingCertificate.id);
+      certificateService.downloadCertificate(existingCertificate.id, userId);
     }
   };
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center space-x-2 text-red-700 mb-2">
+          <AlertTriangle className="w-5 h-5" />
+          <span className="font-medium">Error</span>
+        </div>
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+        <button
+          onClick={() => {
+            setError(null);
+            checkCourseCompletion();
+            checkExistingCertificate();
+          }}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (checking) {
     return (
@@ -306,21 +396,35 @@ const CertificateGenerationButton = ({ course, onGenerate }) => {
 };
 
 // Main Certificates Component
-const CertificatesContent = () => {
+const CertificatesContent = ({ userId: propUserId }) => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  // Get user ID from props or localStorage
+  useEffect(() => {
+    const userId = propUserId || getCurrentUserId();
+    setCurrentUserId(userId);
+    
+    if (!userId) {
+      setError('User ID not found. Please log in again.');
+      setLoading(false);
+    }
+  }, [propUserId]);
 
   useEffect(() => {
-    loadCertificates();
-  }, []);
+    if (currentUserId) {
+      loadCertificates();
+    }
+  }, [currentUserId]);
 
   const loadCertificates = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const result = await certificateService.getCertificates();
+      const result = await certificateService.getCertificates(currentUserId);
       
       if (result.success) {
         setCertificates(result.data || []);
@@ -336,7 +440,7 @@ const CertificatesContent = () => {
   };
 
   const handleDownload = (certificateId) => {
-    certificateService.downloadCertificate(certificateId);
+    certificateService.downloadCertificate(certificateId, currentUserId);
   };
 
   const handleShare = (certificate) => {
@@ -404,6 +508,11 @@ const CertificatesContent = () => {
         <p className="text-blue-100">
           View and download your course completion certificates
         </p>
+        {currentUserId && (
+          <p className="text-blue-200 text-sm mt-2">
+            User ID: {currentUserId}
+          </p>
+        )}
       </div>
 
       {/* Stats */}
@@ -452,6 +561,7 @@ const CertificatesContent = () => {
               certificate={certificate}
               onDownload={handleDownload}
               onShare={handleShare}
+              userId={currentUserId}
             />
           ))}
         </div>

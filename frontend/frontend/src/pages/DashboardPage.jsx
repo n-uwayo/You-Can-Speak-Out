@@ -327,7 +327,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Top Performers */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Top Performers</h2>
@@ -375,7 +375,7 @@ const DashboardPage = () => {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Quick Actions */}
