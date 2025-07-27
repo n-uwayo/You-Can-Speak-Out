@@ -4,7 +4,7 @@ YCSpout is a platform designed to help students improve their public speaking sk
 
 ## Link to access the platform  
 
-You can access the platform by visiting [YCSPout](https://ycspsout.umwalimu.com) or copying this URL `https://ycspsout.umwalimu.com' to your browser.
+You can access the platform by visiting [YCSPout](https://ycspout.umwalimu.com) or copying this URL `https://ycspout.umwalimu.com' to your browser.
 
 ## Home page screenshot
 
@@ -63,7 +63,7 @@ You can access the platform by visiting [YCSPout](https://ycspsout.umwalimu.com)
 
 ## Deployment 
 
-This project is deployed on [umwarimu.com](https://umwarimu.com) and running live on [yspout](https://ycspsout.umwalimu.com)
+This project is deployed on [umwarimu.com](https://umwarimu.com) and running live on [ycspout](https://ycspout.umwalimu.com)
 
 ## Author
   Noella UWAYO
