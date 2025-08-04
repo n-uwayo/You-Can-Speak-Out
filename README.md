@@ -63,7 +63,7 @@ You can access the platform by visiting [YCSPout](https://ycspout.umwalimu.com) 
 
 ## Deployment 
 
-This project is deployed on [umwarimu.com](https://umwarimu.com) and running live on [ycspout](https://ycspout.umwalimu.com)
+This project is deployed on * umwarimu.com  and running live on [ycspout](https://ycspout.umwalimu.com)
 
 ## Author
   Noella UWAYO
